@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: "jdbc:mysql://localhost:3306/ekar"
+    username: ekar
+    password: ekar
+    driverClassName: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+
+count:
+  startValue: 50

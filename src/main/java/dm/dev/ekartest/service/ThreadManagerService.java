@@ -8,7 +8,9 @@ import dm.dev.ekartest.thread.ProducerRunnable;
 import dm.dev.ekartest.thread.SystemCounter;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import javax.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -35,10 +37,31 @@ public class ThreadManagerService {
 
         IntStream
                 .range(0, changeThreadsDto.getConsumersCount())
-                .forEach(v-> consumerExecutor.submit(new ConsumerRunnable(systemCounter)));
+                .forEach(v -> consumerExecutor.submit(new ConsumerRunnable(systemCounter)));
 
         IntStream
                 .range(0, changeThreadsDto.getProducersCount())
-                .forEach(v-> producerExecutor.submit(new ProducerRunnable(systemCounter)));
+                .forEach(v -> producerExecutor.submit(new ProducerRunnable(systemCounter)));
+    }
+
+    @PreDestroy
+    public void destroy() {
+        shutdownAndAwaitTermination(producerExecutor);
+        shutdownAndAwaitTermination(consumerExecutor);
+    }
+
+    private void shutdownAndAwaitTermination(ExecutorService pool) {
+        pool.shutdown();
+        try {
+            if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
+                pool.shutdownNow();
+                if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
+                    log.error("Pool did not terminate");
+                }
+            }
+        } catch (InterruptedException ie) {
+            pool.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 }
